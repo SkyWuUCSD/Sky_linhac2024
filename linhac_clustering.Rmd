@@ -67,35 +67,71 @@ dbscan_result
 dbscan does not work well....
 
 ```{r gmm}
-gmm_result=Mclust(df_scaled)
-gmm_result_6=Mclust(df_scaled,G=6)
+gmm_result=Mclust(df_scaled[,2:17])
+gmm_result_6=Mclust(df_scaled[,2:17],G=6)
+gmm_result_5=Mclust(df_scaled[,2:17],G=5)
 gmm_cluster=gmm_result$classification
 cluster_result$gmm= gmm_cluster
 cluster_result$gmm_6=gmm_result_6$classification
+cluster_result$gmm_5=gmm_result_5$classification
+gmm_result_5$BIC
+runmclust=function(data){
+  bic=data.frame(team=data[,1])
+  dis=dist(data[,2:17])^2
+for (i in 2:10){
+  gmm=Mclust(data[,2:17],G=i)
+  sil=silhouette(gmm$classification,dis)
+  #print(sil)
+  #bic=c(bic,sil)
+  bic[,paste0(i,"clusters")]=sil[,"sil_width"]
+  #plot(sil)
+}
+  return(bic)
+}
+sil_df=runmclust(data=df_scaled)
+cluster_result$gmm_7=Mclust(df_scaled[,2:17],G=7)$classification
+gmm_result_6$classification
+plot(gmm_result, what = "BIC", ylim = range(gmm_result$BIC[,-(1:2)], na.rm = TRUE),
+legendArgs = list(x = "bottomleft"))
 ```
 
 noticed that the clusters are errily similar to manual ones
 
 ```{r final}
 gmm_manual=cluster_result%>%select(team,visual_manual,gmm_6)
-gmm_manual$visual_manual <- ifelse(gmm_manual$visual_manual == 6, 7, gmm_manual$visual_manual)
-gmm_manual$visual_manual <- ifelse(gmm_manual$visual_manual == 1, 8, gmm_manual$visual_manual)
-gmm_manual$visual_manual <- ifelse(gmm_manual$visual_manual == 3, 9, gmm_manual$visual_manual)
-gmm_manual$visual_manual <- ifelse(gmm_manual$visual_manual == 4, 10, gmm_manual$visual_manual)
-gmm_manual$visual_manual <- ifelse(gmm_manual$visual_manual == 5, 11, gmm_manual$visual_manual)
-gmm_manual$visual_manual <- ifelse(gmm_manual$visual_manual == 2, 12, gmm_manual$visual_manual)
-gmm_manual$gmm_6 <- ifelse(gmm_manual$gmm_6 == 1, 7, gmm_manual$gmm_6)
-gmm_manual$gmm_6 <- ifelse(gmm_manual$gmm_6 == 2, 8, gmm_manual$gmm_6)
-gmm_manual$gmm_6 <- ifelse(gmm_manual$gmm_6 == 3, 9, gmm_manual$gmm_6)
-gmm_manual$gmm_6 <- ifelse(gmm_manual$gmm_6 == 4, 11, gmm_manual$gmm_6)
-gmm_manual$gmm_6 <- ifelse(gmm_manual$gmm_6 == 5, 10, gmm_manual$gmm_6)
-gmm_manual$gmm_6 <- ifelse(gmm_manual$gmm_6 == 6, 12, gmm_manual$gmm_6)
-gmm_and_manual=gmm_manual-6
+gmm_5_manual=cluster_result%>%select(team,visual_manual,gmm_5)
+gmm_5_manual$visual_manual <- ifelse(gmm_5_manual$visual_manual == 6, 7, gmm_5_manual$visual_manual)
+gmm_5_manual$visual_manual <- ifelse(gmm_5_manual$visual_manual == 1, 8, gmm_5_manual$visual_manual)
+gmm_5_manual$visual_manual <- ifelse(gmm_5_manual$visual_manual == 3, 9, gmm_5_manual$visual_manual)
+gmm_5_manual$visual_manual <- ifelse(gmm_5_manual$visual_manual == 4, 10, gmm_5_manual$visual_manual)
+gmm_5_manual$visual_manual <- ifelse(gmm_5_manual$visual_manual == 5, 11, gmm_5_manual$visual_manual)
+gmm_5_manual$visual_manual <- ifelse(gmm_5_manual$visual_manual == 2, 12, gmm_5_manual$visual_manual)
+gmm_5_manual$gmm_5 <- ifelse(gmm_5_manual$gmm_5 == 1, 7, gmm_5_manual$gmm_5)
+gmm_5_manual$gmm_5 <- ifelse(gmm_5_manual$gmm_5 == 2, 8, gmm_5_manual$gmm_5)
+gmm_5_manual$gmm_5 <- ifelse(gmm_5_manual$gmm_5 == 3, 9, gmm_5_manual$gmm_5)
+gmm_5_manual$gmm_5 <- ifelse(gmm_5_manual$gmm_5 == 4, 11, gmm_5_manual$gmm_5)
+gmm_5_manual$gmm_5 <- ifelse(gmm_5_manual$gmm_5 == 5, 10, gmm_5_manual$gmm_5)
+gmm_5_manual$gmm_5 <- ifelse(gmm_5_manual$gmm_5 == 6, 12, gmm_5_manual$gmm_5)
+gmm_and_manual=gmm_5_manual-6
 gmm_and_manual$team=gmm_and_manual$team+6
-gmm_and_manual$isSame=gmm_and_manual$visual_manual==gmm_and_manual$gmm_6
+gmm_and_manual$isSame=gmm_and_manual$visual_manual==gmm_and_manual$gmm_5
 
 #write.csv(gmm_and_manual,"onlyGMMandManual.csv")
 #write.csv(cluster_result,"result_all_methods.csv")
 ```
 
+lets use gmm_6 clusters for now
 
+```{r}
+df$clusters=gmm_and_manual$gmm_5
+df%>%group_by(clusters)%>%summarize(clus_mean_time=mean(mean_time),
+                                    clus_mean_pass=mean(mean_pass),
+                                    clus_mean_ozone_time=mean(mean_ozone_time),
+                                    clus_mean_cm_xg=mean(mean_cmltv_xG),
+                                    clus_mean_goal=mean(mean_goals),
+                                    clus_mean_shots=mean(mean_shots))
+df_scaled=data.frame(df_scaled)
+df_scaled$team=df$team
+df_scaled$clusters=gmm_and_manual$gmm_5
+#write.csv(df_scaled,"data_clustered.csv")
+```
