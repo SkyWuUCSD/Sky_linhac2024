@@ -124,14 +124,11 @@ lets use gmm_6 clusters for now
 
 ```{r}
 df$clusters=gmm_and_manual$gmm_5
-df%>%group_by(clusters)%>%summarize(clus_mean_time=mean(mean_time),
-                                    clus_mean_pass=mean(mean_pass),
-                                    clus_mean_ozone_time=mean(mean_ozone_time),
-                                    clus_mean_cm_xg=mean(mean_cmltv_xG),
-                                    clus_mean_goal=mean(mean_goals),
-                                    clus_mean_shots=mean(mean_shots))
+summary_by_cluster=df%>%group_by(clusters)%>%summarize(across(everything(), mean, na.rm=TRUE))%>%select(-team)
 df_scaled=data.frame(df_scaled)
 df_scaled$team=df$team
 df_scaled$clusters=gmm_and_manual$gmm_5
 #write.csv(df_scaled,"data_clustered.csv")
+#write.csv(summary_by_cluster,"summary_stat_by_cluster.csv")
+
 ```
